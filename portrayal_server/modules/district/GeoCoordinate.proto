@@ -1,0 +1,8 @@
+package bfd;
+
+message GeoCoordinate {
+    required double latitude = 1;
+    required double longitude = 2;
+    optional string district = 3;
+    optional double distance = 4;
+}

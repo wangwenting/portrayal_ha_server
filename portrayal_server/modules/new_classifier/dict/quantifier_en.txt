@@ -1,0 +1,79 @@
+克
+gram
+g
+毫克
+milligram
+mg
+千克
+公斤
+kilogram
+kg
+公吨
+metric ton
+m.t
+长吨
+long ton
+l.t
+短吨
+short ton
+sh.t
+磅
+pound
+lb
+米
+meter
+m
+公里
+kilometer
+km
+厘米
+centimeter
+km
+毫米
+millimeter
+mm
+码
+yard
+yd
+英尺
+foot
+ft
+英寸
+inch
+in
+平方米
+square meter
+sq.m
+平方英尺
+square foot
+sq.ft
+平方码
+square yard
+sq.yd
+平方英寸
+square inch
+sq.in
+升
+litre
+l
+毫升
+millilitre
+ml
+加仑
+gallon
+gal
+蒲式耳
+bushel
+bu
+立方米
+cubic meter
+cu.m
+立方英尺
+cubic foot
+cu.ft
+立方码
+cubic yard
+cu.yd
+立方英寸
+cubic inch
+cu.in

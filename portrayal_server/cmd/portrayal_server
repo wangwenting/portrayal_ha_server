@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+# -*- coding: utf-8 -*-
+import traceback
+import sys 
+import signal
+
+from thrift.transport import TSocket
+from thrift.transport import TTransport
+from thrift.protocol import TBinaryProtocol
+from thrift.protocol import TCompactProtocol
+from thrift.server import TServer, TProcessPoolServer
+from interface.portrayal import PortrayalService
+
+from portrayal_pro import PortrayalPro
+
+from oslo.config import cfg
+from common import log
+from common import config_init
+
+def setupHandlers():
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+
+class PortrayalServiceHandler(object):
+
+    def __init__(self):
+        self.portrayal = PortrayalPro()
+
+    def analyze(self, request):
+        return self.portrayal.process(request)
+
+class PortrayalServiceRun(object):
+
+    @staticmethod
+    def run_service(port):
+        handler = PortrayalServiceHandler()                                                                                                              
+                                                                                                                                                     
+        processor = PortrayalService.Processor(handler)                                                                                                  
+        transport = TSocket.TServerSocket(port=port)                                                                                                     
+        tfactory = TTransport.TBufferedTransportFactory()                                                                                                
+                                                                                                                                                     
+        pfactory = TBinaryProtocol.TBinaryProtocolFactory()                                                                                              
+        #server = TServer.TThreadPoolServer(processor, transport,                                                                                         
+        #                               tfactory, pfactory)                                                                                           
+        server = TProcessPoolServer.TProcessPoolServer(processor, transport,
+                                                       tfactory, pfactory)
+
+        server.setNumWorkers(2)
+        #pfactory = TCompactProtocol.TCompactProtocolFactory()                                                                                           
+        #server = TServer.TForkingServer( processor, transport, tfactory, pfactory )                                                                     
+        print("server start")                                                                                                                                         
+        server.serve()  
+
+if __name__ == "__main__":
+    setupHandlers()
+    config_init.parse_args(default_config_files=["/home/wenting.wang/portrayal_server/etc/portrayal_server.conf"])
+    log.setup()
+    PortrayalServiceRun.run_service("10010")

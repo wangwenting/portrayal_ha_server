@@ -1,0 +1,87 @@
+version: 1.0.1
+商品画像新架构使用说明
+
+一. thrift 接口说明：
+       接口地址： http://wiki.baifendian.com/pages/viewpage.action?pageId=6261974
+
+二. 服务端启动说明：
+（1）  非harpc 方式
+           进入portrayal_server 目录：
+           python  portrayal_ser --help         查看帮助
+           python portrayal_ser  --config-file   /home/wenting/truck/python/portrayal_server/etc/portrayal_server/portrayal_server.conf 启动
+           修改配置文件 portrayal_server/etc/portrayal_server 目录下 portrayal_server.conf 文件，指定日志和模块配置文件地址
+           配置文件说明：
+              [DEFAULT]
+              debug=True      (日志debug级别, 默认值false)
+              verbose=True   (日志INFO级别， 如果设置verbose,不需设置debug， 默认值false)
+              log_dir=/home/wenting/truck/python/portrayal_server/logs  (日志输出目录，如果没有此目录，需要创建目录)
+              thrift_port=10010 (thrift 服务 端口, 默认值10010)
+              thread_nums=10 (设置启动多少个进程, 默认值1
+              modules_config_path=/home/wenting/truck/python/portrayal_server/etc/portrayal_server/modules.json(框架加载的模块文件)
+              [Route]
+              route_path=portrayal_server.routes.default_route.DefaultRoute(框架加载的路由模块)
+              [Ha]
+              zk_address=172.18.1.22:2181,172.18.1.23:2181,172.18.1.24:2181 (ha服务的zk地址，此地址和类目映射的地址相同）
+
+    (2)  harpc 方式
+            
+         python  portrayal_ha_server.py --help         查看帮助
+         python portrayal_ha_server.py  --config-file   /home/wenting/truck/python/portrayal_server/etc/portrayal_server/portrayal_server.conf  启动
+
+
+三. 客户端访问方式
+1.进入python portrayal_server/portrayal_client.py 看server是否启动( 启动前请修改对应ip 和端口)  
+2.进入 portrayal_server/tools/function 目录下，进行功能测试
+3.修改 test.py 文件，此处PortrayalConnection("172.18.1.101", 10089, "Portayal") 修改服务端口
+4.执行 test.py 文件
+
+四. 添加新模块步骤
+1、模块包装函数 继承 Module类，实现 __call__ 方法，输入ItemBase，ItemProfile (JSON 结构)
+例子： 创建price_level 目录 如下:               
+price_level/
+├── __init__.py
+├── price_level.py
+└── resource
+└── price_level_9.txt
+price_level.py 价格模块 代码
+price_level_9.txt 资源文件
+
+
+price_level 代码解析：
+  class PriceLevel(Module):
+    def __init__(self, context):
+        super(PriceLevel, self).__init__(context)
+        cur_dir = os.path.dirname(os.path.abspath(__file__)) or os.getcwd()
+        self.price_levels = {}
+        cfg_file = cur_dir + '/resource/price_level_9.txt'
+        self.load_file(cfg_file)
+        self.resource_process(cfg_file)
+
+    def resource_process(self, cfg_file):
+        self.add_resource_file(cfg_file)
+
+  (1) 继承 Module 类
+  (2) 定义初始化函数__init__ ,  load 资源，  通过add_resource_file 加入资源监听， server框架会定时访问此文件是否变化，从而进行重新加在此模块
+  def __call__(self, item_base, item_profile):
+      try:
+          price = item_base.get("price", 0)
+          cat_str = u"$".join(item_profile["category_name_new"])
+          level = self.get_price_level(cat_str, price)
+          if level:
+              item_profile["price_level"] = level
+      except Exception, e:
+          logging.error(traceback.print_exc())
+          logging.error("price_level: %s", e)
+      return {"status": 0}
+
+  (3) 定义__call__ 函数，
+
+此函数含有item_base 和 item_profile  json参数, 此模块处理的结果放到item_profile中， 返回输出状态
+
+2、修改模块加载文件 portrayal_server/modules/create_modules.py 按照例子添加模块信息
+                 在LOAD_MODULES 中添加  "price_level"
+                 在DEFAULT          中添加 "price_level”  默认流程中走不走price_level
+                 在modules             中添加  "price_level":{"type":"python", "path":"portrayal_server.modules.price_level.price_level.PriceLevel", "enable":True}
+3、运行 create_modules.py 生成 modules.json 文件（框架加载的模块资源文件)
+4、启动服务器端  查看此模块是否加载
+
